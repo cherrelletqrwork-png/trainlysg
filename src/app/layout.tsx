@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { TopNav } from "@/components/top-nav";
+import { ChatbotWidget } from "@/components/chatbot-widget";
 import { getSession } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             © {new Date().getFullYear()} Trainly Pte Ltd. Singapore.
           </div>
         </footer>
+        <ChatbotWidget />
       </body>
     </html>
   );

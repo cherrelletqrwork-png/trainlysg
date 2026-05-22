@@ -3,6 +3,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Editable site-wide content (landing-page stats + footer). Owner-only.
+// One row, id always "singleton". `data` is a JSON blob — keeps the schema
+// flexible as the editable surface grows.
+model SiteContent {
+  id        String   @id @default("singleton")
+  data      String   // JSON: { heroStats: [...], footer: { clients: [...], coaches: [...], company: [...] } }
+  updatedAt DateTime @updatedAt
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")

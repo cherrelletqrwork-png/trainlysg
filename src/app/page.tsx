@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CoachCard } from "@/components/coach-card";
 import { sgd } from "@/lib/utils";
+import { getSiteContent } from "@/lib/site-content";
 
 export default async function HomePage() {
   const featured = await prisma.coach.findMany({
@@ -13,6 +14,7 @@ export default async function HomePage() {
     take: 3,
   });
   const specialties = await prisma.specialty.findMany({ take: 12 });
+  const site = await getSiteContent();
 
   return (
     <>
@@ -59,9 +61,9 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-ink-600">
-              <Stat n="2,400+" label="verified coaches" />
-              <Stat n="4.9★" label="avg rating" />
-              <Stat n="48hr" label="money-back guarantee" />
+              {site.heroStats.map((s, i) => (
+                <Stat key={i} n={s.n} label={s.label} />
+              ))}
             </div>
           </div>
 

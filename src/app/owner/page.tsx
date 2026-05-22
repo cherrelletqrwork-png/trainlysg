@@ -57,9 +57,45 @@ export default async function OwnerHome() {
           <h1 className="font-display text-3xl font-semibold">Trainly admin</h1>
           <p className="text-ink-600">Hi {session.name.split(" ")[0]} — here's how the business is doing.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/owner/coaches" className="btn-outline">Manage coaches</Link>
+          <Link href="/owner/site" className="btn-outline">Edit site content</Link>
           <Link href="/owner/profile" className="btn-outline">My profile</Link>
         </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid sm:grid-cols-3 gap-3">
+        <Link
+          href="/owner/coaches/new"
+          className="card p-5 hover:shadow-lift transition flex items-start gap-3 bg-gradient-to-br from-coral-50 to-cream border-coral-200"
+        >
+          <span className="text-2xl">➕</span>
+          <div>
+            <div className="font-medium">Add a coach</div>
+            <p className="text-xs text-ink-600 mt-0.5">Create a verified coach account + listing.</p>
+          </div>
+        </Link>
+        <Link
+          href="/owner/site"
+          className="card p-5 hover:shadow-lift transition flex items-start gap-3 bg-gradient-to-br from-sage-50 to-cream border-sage-200"
+        >
+          <span className="text-2xl">✏️</span>
+          <div>
+            <div className="font-medium">Edit homepage</div>
+            <p className="text-xs text-ink-600 mt-0.5">Hero stats, footer links, site-wide content.</p>
+          </div>
+        </Link>
+        <Link
+          href="/owner/coaches"
+          className="card p-5 hover:shadow-lift transition flex items-start gap-3"
+        >
+          <span className="text-2xl">📋</span>
+          <div>
+            <div className="font-medium">All coaches</div>
+            <p className="text-xs text-ink-600 mt-0.5">Browse, view, manage every coach on Trainly.</p>
+          </div>
+        </Link>
       </div>
 
       {/* KPIs */}

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { destroySession, getSession } from "@/lib/auth";
+import { destroySession, getSession, hashPassword } from "@/lib/auth";
+import { setSiteContent, type SiteContent } from "@/lib/site-content";
 
 /**
  * Hard-deletes a user and everything that would otherwise dangle.
@@ -259,3 +260,128 @@ export async function adminDeleteUser(userId: string): Promise<{ ok: true } | { 
   revalidatePath("/owner");
   return { ok: true };
 }
+
+// ───────────────────────────────────────────────────────────────────
+// OWNER-ONLY: Editable site content (landing stats + footer)
+// ───────────────────────────────────────────────────────────────────
+
+export async function updateSiteContent(content: SiteContent): Promise<{ ok: true } | { error: string }> {
+  const session = await getSession();
+  if (!session || session.role !== "OWNER") return { error: "Not authorised." };
+
+  // Light validation
+  if (!Array.isArray(content.heroStats) || content.heroStats.length === 0)
+    return { error: "Need at least one hero stat." };
+  for (const s of content.heroStats) {
+    if (typeof s.n !== "string" || typeof s.label !== "string")
+      return { error: "Hero stats must have a number and a label." };
+  }
+  for (const col of [content.footer.clients, content.footer.coaches, content.footer.company]) {
+    if (typeof col.title !== "string") return { error: "Footer column needs a title." };
+    if (!Array.isArray(col.links)) return { error: "Footer column needs links." };
+  }
+
+  try {
+    await setSiteContent(content);
+  } catch (e) {
+    return { error: "Couldn't save changes. Please try again." };
+  }
+  revalidatePath("/", "layout");
+  revalidatePath("/owner");
+  return { ok: true };
+}
+
+// ───────────────────────────────────────────────────────────────────
+// OWNER-ONLY: Create new coach
+// ───────────────────────────────────────────────────────────────────
+
+export async function adminCreateCoach(input: {
+  name: string;
+  email: string;
+  password: string;
+  slug: string;
+  location: string;
+  headline: string;
+  tagline: string;
+  hourlyRate: number;
+  specialtySlugs: string[];
+  formats: string;
+  vibeTags: string;
+  languages: string;
+}): Promise<{ ok: true; coachSlug: string } | { error: string }> {
+  const session = await getSession();
+  if (!session || session.role !== "OWNER") return { error: "Not authorised." };
+
+  // Basic validation
+  if (input.name.trim().length < 2) return { error: "Name is too short." };
+  if (!/^\S+@\S+\.\S+$/.test(input.email)) return { error: "Invalid email." };
+  if (input.password.length < 6) return { error: "Password must be at least 6 characters." };
+  if (!/^[a-z0-9-]+$/.test(input.slug)) return { error: "Slug can only contain lowercase letters, numbers, and dashes." };
+  if (input.hourlyRate < 10 || input.hourlyRate > 2000) return { error: "Hourly rate must be between S$10 and S$2000." };
+
+  // Uniqueness
+  const existingUser = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+  if (existingUser) return { error: "A user with that email already exists." };
+  const existingSlug = await prisma.coach.findUnique({ where: { slug: input.slug } });
+  if (existingSlug) return { error: "That slug is taken — pick another." };
+
+  // Resolve specialties
+  const specialties = await prisma.specialty.findMany({ where: { slug: { in: input.specialtySlugs } } });
+  if (specialties.length === 0) return { error: "Pick at least one specialty." };
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        passwordHash: await hashPassword(input.password),
+        name: input.name,
+        role: "COACH",
+        location: input.location,
+        bio: input.tagline,
+        avatarUrl: `https://i.pravatar.cc/200?u=${encodeURIComponent(input.email)}`,
+      },
+    });
+    const coach = await prisma.coach.create({
+      data: {
+        userId: user.id,
+        slug: input.slug,
+        headline: input.headline,
+        tagline: input.tagline,
+        longBio: "Tell your story — what do you specialise in, who do you love working with, and what makes your sessions different?",
+        heroImageUrl: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&h=800&fit=crop",
+        galleryUrls: "[]",
+        yearsExperience: 1,
+        hourlyRate: input.hourlyRate,
+        languages: input.languages || "English",
+        formats: input.formats || "HOME,VIRTUAL",
+        vibeTags: input.vibeTags || "Friendly,Patient",
+        certifications: "[]",
+        socials: "{}",
+        isVerified: true,
+      },
+    });
+    for (const s of specialties) {
+      await prisma.coachSpecialty.create({ data: { coachId: coach.id, specialtyId: s.id } });
+    }
+    // Default packages
+    await prisma.package.create({
+      data: {
+        coachId: coach.id,
+        name: "Single Session",
+        sessions: 1,
+        priceSGD: input.hourlyRate,
+        description: "Try-it-out session.",
+      },
+    });
+    // Default availability: Mon–Sat, 7am–9pm
+    for (let weekday = 1; weekday <= 6; weekday++) {
+      await prisma.availability.create({ data: { coachId: coach.id, weekday, startMin: 7 * 60, endMin: 21 * 60 } });
+    }
+    revalidatePath("/coaches");
+    revalidatePath("/owner");
+    return { ok: true, coachSlug: coach.slug };
+  } catch (e) {
+    return { error: "Couldn't create coach. Please try again." };
+  }
+}
+

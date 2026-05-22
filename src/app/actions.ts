@@ -123,3 +123,71 @@ export async function updateCoachProfile(input: {
   revalidatePath("/coach");
   return { ok: true };
 }
+
+// Anything bigger than this and the network round-trip + DB column gets unhappy.
+// 200KB base64 ≈ ~150KB raw image, plenty for a 384x384 JPEG avatar.
+const MAX_AVATAR_BYTES = 200_000;
+const NAME_MAX = 80;
+const BIO_MAX = 500;
+const LOCATION_MAX = 80;
+
+function isSafeImageUrl(url: string): boolean {
+  if (!url) return true;
+  // Accept resized data URLs (the avatar uploader produces these)
+  if (url.startsWith("data:image/")) return url.length <= MAX_AVATAR_BYTES;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export async function updateUserProfile(input: {
+  name?: string;
+  bio?: string;
+  location?: string;
+  avatarUrl?: string;
+}): Promise<{ ok: true } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Please log in." };
+
+  const data: Record<string, string | null> = {};
+
+  if (input.name !== undefined) {
+    const name = input.name.trim();
+    if (!name) return { error: "Name can't be empty." };
+    if (name.length > NAME_MAX) return { error: `Name too long (${NAME_MAX} char max).` };
+    data.name = name;
+  }
+  if (input.bio !== undefined) {
+    const bio = input.bio.trim();
+    if (bio.length > BIO_MAX) return { error: `Bio too long (${BIO_MAX} char max).` };
+    data.bio = bio || null;
+  }
+  if (input.location !== undefined) {
+    const location = input.location.trim();
+    if (location.length > LOCATION_MAX) return { error: `Location too long (${LOCATION_MAX} char max).` };
+    data.location = location || null;
+  }
+  if (input.avatarUrl !== undefined) {
+    const url = input.avatarUrl.trim();
+    if (!isSafeImageUrl(url)) return { error: "That doesn't look like a valid image URL." };
+    if (url.length > MAX_AVATAR_BYTES) return { error: "Avatar image is too large (try a smaller photo)." };
+    data.avatarUrl = url || null;
+  }
+
+  if (Object.keys(data).length === 0) return { ok: true };
+
+  try {
+    await prisma.user.update({ where: { id: session.userId }, data });
+  } catch (e) {
+    return { error: "Couldn't save your profile. Try again." };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/profile");
+  revalidatePath("/coach");
+  revalidatePath("/coach/profile");
+  return { ok: true };
+}

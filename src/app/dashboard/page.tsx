@@ -39,15 +39,24 @@ export default async function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
-      <div className="flex items-center gap-4">
-        {user?.avatarUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} className="w-16 h-16 rounded-full object-cover" alt="" />
-        )}
-        <div>
-          <h1 className="font-display text-3xl font-semibold">Hi, {user?.name.split(" ")[0]} 👋</h1>
-          <p className="text-ink-600">Here's how you're tracking.</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          {user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatarUrl} className="w-16 h-16 rounded-full object-cover" alt="" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center font-display text-2xl font-semibold">
+              {(user?.name || "?").split(" ").map((p) => p[0]).slice(0, 2).join("")}
+            </div>
+          )}
+          <div>
+            <h1 className="font-display text-3xl font-semibold">Hi, {user?.name.split(" ")[0]} 👋</h1>
+            <p className="text-ink-600">Here's how you're tracking.</p>
+          </div>
         </div>
+        <Link href="/dashboard/profile" className="btn-outline text-sm">
+          Edit profile
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">

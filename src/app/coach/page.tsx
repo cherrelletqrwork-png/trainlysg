@@ -52,9 +52,13 @@ export default async function CoachHub() {
     <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {coach.user.avatarUrl && (
+          {coach.user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={coach.user.avatarUrl} className="w-16 h-16 rounded-full object-cover" alt="" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center font-display text-2xl font-semibold">
+              {coach.user.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+            </div>
           )}
           <div>
             <h1 className="font-display text-3xl font-semibold">Coach hub</h1>
@@ -62,6 +66,7 @@ export default async function CoachHub() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Link href="/coach/profile" className="btn-outline">Edit profile</Link>
           <Link href={`/coaches/${coach.slug}`} className="btn-outline">View public profile</Link>
         </div>
       </div>

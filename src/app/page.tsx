@@ -24,13 +24,30 @@ export default async function HomePage() {
 
         <div className="max-w-7xl mx-auto px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-2 gap-12 items-center">
           <div className="fade-up">
+            {/* Trainly brand block */}
+            <div className="flex items-center gap-3 mb-6">
+              <span className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-sage-500 to-coral-400 items-center justify-center text-white text-3xl font-bold shadow-lift">
+                T
+              </span>
+              <div>
+                <div className="font-display text-4xl md:text-5xl font-semibold tracking-tight leading-none text-ink-900">
+                  Trainly
+                </div>
+                <div className="text-xs md:text-sm text-ink-500 mt-1 tracking-wide uppercase">
+                  Train how you live
+                </div>
+              </div>
+            </div>
+
             <div className="chip-sage mb-4">🇸🇬 Now live in Singapore</div>
             <h1 className="font-display text-5xl md:text-6xl font-semibold leading-[1.05] tracking-tight text-ink-900">
               Find your coach. <br />
               <span className="text-sage-700">Train how you live.</span>
             </h1>
             <p className="mt-5 text-lg text-ink-700 max-w-xl">
-              Verified personal trainers, physios, yoga teachers, nutritionists and more —
+              <span className="font-semibold text-ink-900">Trainly</span> is Singapore's
+              verified marketplace for freelance fitness and wellness professionals —
+              personal trainers, physios, yoga teachers, nutritionists and more,
               bookable at home, online, or outdoors. No gym contracts. No middlemen.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">

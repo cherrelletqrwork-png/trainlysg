@@ -11,6 +11,7 @@ export default async function Dashboard() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role === "COACH") redirect("/coach");
+  if (session.role === "OWNER") redirect("/owner");
 
   const now = new Date();
   const [upcoming, past, favourites, progress, user] = await Promise.all([

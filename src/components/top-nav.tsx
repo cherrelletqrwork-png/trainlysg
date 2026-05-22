@@ -21,7 +21,9 @@ export function TopNav({ session }: { session: SessionPayload | null }) {
         <div className="flex items-center gap-2">
           {session ? (
             <>
-              {session.role === "CLIENT" ? (
+              {session.role === "OWNER" ? (
+                <Link href="/owner" className="btn-outline">Admin</Link>
+              ) : session.role === "CLIENT" ? (
                 <>
                   <Link href="/chat" className="btn-ghost">Chat</Link>
                   <Link href="/dashboard" className="btn-outline">Dashboard</Link>

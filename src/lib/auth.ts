@@ -6,7 +6,15 @@ import { prisma } from "./prisma";
 const COOKIE = "trainly_session";
 const secret = new TextEncoder().encode(process.env.AUTH_SECRET || "dev-secret");
 
-export type SessionPayload = { userId: string; role: "CLIENT" | "COACH"; email: string; name: string };
+export type UserRole = "CLIENT" | "COACH" | "OWNER";
+export type SessionPayload = { userId: string; role: UserRole; email: string; name: string };
+
+/** Where each role's "home" lives — used for post-login redirects and lateral redirects. */
+export function homePathFor(role: UserRole): string {
+  if (role === "OWNER") return "/owner";
+  if (role === "COACH") return "/coach";
+  return "/dashboard";
+}
 
 export async function hashPassword(pw: string) {
   return bcrypt.hash(pw, 10);

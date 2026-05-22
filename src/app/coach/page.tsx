@@ -10,6 +10,7 @@ import { CoachProfileEditor } from "@/components/coach-profile-editor";
 export default async function CoachHub() {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.role === "OWNER") redirect("/owner");
   if (session.role !== "COACH") redirect("/dashboard");
 
   const coach = await prisma.coach.findUnique({

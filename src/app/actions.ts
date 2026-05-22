@@ -1,8 +1,32 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { destroySession, getSession } from "@/lib/auth";
+
+/**
+ * Hard-deletes a user and everything that would otherwise dangle.
+ * The Prisma schema cascades the Coach record + Favourite + ProgressEntry
+ * automatically, but Booking / Review / Message rows have no cascade so
+ * we delete them by hand before nuking the user.
+ */
+export async function deleteUserCascade(userId: string): Promise<void> {
+  const coach = await prisma.coach.findUnique({ where: { userId } });
+  await prisma.$transaction(async (tx) => {
+    if (coach) {
+      await tx.review.deleteMany({ where: { coachId: coach.id } });
+      await tx.booking.deleteMany({ where: { coachId: coach.id } });
+    }
+    await tx.review.deleteMany({ where: { authorId: userId } });
+    await tx.booking.deleteMany({ where: { clientId: userId } });
+    await tx.message.deleteMany({
+      where: { OR: [{ senderId: userId }, { recipientId: userId }] },
+    });
+    // Cascades: Coach, Favourite, ProgressEntry. MatchAnswer.userId is set null.
+    await tx.user.delete({ where: { id: userId } });
+  });
+}
 
 export async function createBooking(input: {
   coachId: string;
@@ -189,5 +213,49 @@ export async function updateUserProfile(input: {
   revalidatePath("/dashboard/profile");
   revalidatePath("/coach");
   revalidatePath("/coach/profile");
+  return { ok: true };
+}
+
+/**
+ * Self-service: the currently-logged-in user permanently deletes their own
+ * account and everything connected to it. Requires retyping their email to
+ * confirm — checked client-side, re-checked here.
+ */
+export async function deleteOwnAccount(confirmEmail: string): Promise<{ error: string } | never> {
+  const session = await getSession();
+  if (!session) return { error: "Please log in." };
+  if (confirmEmail.trim().toLowerCase() !== session.email.toLowerCase()) {
+    return { error: "Email confirmation didn't match — your account was not deleted." };
+  }
+  try {
+    await deleteUserCascade(session.userId);
+  } catch (e) {
+    return { error: "Couldn't delete your account. Please try again." };
+  }
+  await destroySession();
+  revalidatePath("/", "layout");
+  redirect("/?deleted=1");
+}
+
+/**
+ * Owner-only: delete any user by id. Owners can't delete themselves through
+ * this action (use deleteOwnAccount instead) so we don't accidentally lock
+ * the business out of its own admin panel.
+ */
+export async function adminDeleteUser(userId: string): Promise<{ ok: true } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Please log in." };
+  if (session.role !== "OWNER") return { error: "Not authorised." };
+  if (userId === session.userId) {
+    return { error: "Use 'Delete my account' for your own account — this is the admin tool." };
+  }
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) return { error: "User not found." };
+  try {
+    await deleteUserCascade(userId);
+  } catch (e) {
+    return { error: "Couldn't delete that user. Please try again." };
+  }
+  revalidatePath("/owner");
   return { ok: true };
 }

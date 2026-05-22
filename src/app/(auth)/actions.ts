@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, hashPassword, verifyPassword } from "@/lib/auth";
+import { createSession, destroySession, hashPassword, verifyPassword, homePathFor, type UserRole } from "@/lib/auth";
 
 const signupSchema = z.object({
   name: z.string().min(2),
@@ -63,7 +63,7 @@ export async function signup(_: AuthState, formData: FormData): Promise<AuthStat
     });
   }
 
-  await createSession({ userId: user.id, role: user.role as "CLIENT" | "COACH", email: user.email, name: user.name });
+  await createSession({ userId: user.id, role: user.role as UserRole, email: user.email, name: user.name });
   redirect(role === "COACH" ? "/coach" : "/coaches");
 }
 
@@ -77,8 +77,9 @@ export async function login(_: AuthState, formData: FormData): Promise<AuthState
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) return { error: "Invalid login." };
 
-  await createSession({ userId: user.id, role: user.role as "CLIENT" | "COACH", email: user.email, name: user.name });
-  redirect(user.role === "COACH" ? "/coach" : "/dashboard");
+  const role = user.role as UserRole;
+  await createSession({ userId: user.id, role, email: user.email, name: user.name });
+  redirect(homePathFor(role));
 }
 
 export async function logout() {

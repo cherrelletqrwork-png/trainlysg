@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { UserProfileEditor } from "@/components/user-profile-editor";
 import { CoachProfileEditor } from "@/components/coach-profile-editor";
+import { DeleteAccountButton } from "@/components/delete-account-button";
 
 export default async function CoachProfilePage() {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.role === "OWNER") redirect("/owner/profile");
   if (session.role !== "COACH") redirect("/dashboard/profile");
 
   const coach = await prisma.coach.findUnique({
@@ -64,6 +66,8 @@ export default async function CoachProfilePage() {
       <p className="text-xs text-ink-500 text-center">
         Changes are saved per-section and visible on your public profile within a minute.
       </p>
+
+      <DeleteAccountButton email={coach.user.email} />
     </div>
   );
 }

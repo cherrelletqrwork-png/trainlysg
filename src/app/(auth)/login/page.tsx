@@ -16,29 +16,17 @@ export default function LoginPage() {
         <form action={action} className="space-y-4">
           <div>
             <label className="label" htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required defaultValue="sarah@demo.com" />
+            <input className="input" id="email" name="email" type="email" required autoComplete="email" />
           </div>
           <div>
             <label className="label" htmlFor="password">Password</label>
-            <input className="input" id="password" name="password" type="password" required defaultValue="password123" />
+            <input className="input" id="password" name="password" type="password" required autoComplete="current-password" />
           </div>
           {state?.error && <p className="text-sm text-coral-700 bg-coral-50 rounded-lg px-3 py-2">{state.error}</p>}
           <button className="btn-primary w-full" disabled={pending}>
             {pending ? "Signing in…" : "Log in"}
           </button>
         </form>
-
-        <div className="my-6 text-center text-xs text-ink-500">Demo accounts (password: password123)</div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-lg bg-sage-50 border border-sage-100 p-2">
-            <div className="font-medium text-sage-800">Client</div>
-            <div className="text-sage-700">sarah@demo.com</div>
-          </div>
-          <div className="rounded-lg bg-coral-50 border border-coral-100 p-2">
-            <div className="font-medium text-coral-800">Coach</div>
-            <div className="text-coral-700">aisha@trainly.com</div>
-          </div>
-        </div>
 
         <p className="text-sm text-center mt-6 text-ink-600">
           New here?{" "}

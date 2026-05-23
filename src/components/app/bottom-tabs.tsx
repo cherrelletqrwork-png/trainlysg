@@ -1,12 +1,13 @@
 "use client";
 
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 type TabDef = {
   href: string;
   label: string;
-  Icon: (props: { className?: string }) => JSX.Element;
+  Icon: ComponentType<{ className?: string }>;
 };
 
 function HomeIcon({ className }: { className?: string }) {
